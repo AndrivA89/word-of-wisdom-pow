@@ -7,15 +7,17 @@ import (
 	"strings"
 
 	"github.com/AndrivA89/word-of-wisdom-pow/internal/infrastructure/repository"
+	"github.com/AndrivA89/word-of-wisdom-pow/internal/pow"
 )
 
 type Server struct {
 	address    string
 	repository *repository.Repo
+	difficulty int
 }
 
-func NewServer(address string, repository *repository.Repo) *Server {
-	return &Server{address: address, repository: repository}
+func NewServer(address string, repo *repository.Repo, difficulty int) *Server {
+	return &Server{address: address, repository: repo, difficulty: difficulty}
 }
 
 func (s *Server) Start() {
@@ -32,6 +34,7 @@ func (s *Server) Start() {
 			log.Printf("Error accepting connection: %v", err)
 			continue
 		}
+		log.Printf("Connection established with %s", conn.RemoteAddr())
 		go s.handleConnection(conn)
 	}
 }
@@ -39,9 +42,12 @@ func (s *Server) Start() {
 func (s *Server) handleConnection(conn net.Conn) {
 	defer conn.Close()
 
-	_, err := conn.Write([]byte("Welcome! Request a quote by typing 'GET QUOTE'.\n"))
+	challenge := pow.GenerateChallenge()
+	log.Printf("Generated challenge: %s", challenge)
+
+	_, err := conn.Write([]byte(fmt.Sprintf("CHALLENGE %s %d\n", challenge, s.difficulty)))
 	if err != nil {
-		log.Printf("Error sending message: %v", err)
+		log.Printf("Error sending challenge: %v", err)
 		return
 	}
 
@@ -53,17 +59,26 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 
 	message := strings.TrimSpace(string(buffer[:n]))
+	log.Printf("Received solution from client: %s", message)
 
-	if strings.ToUpper(message) == "GET QUOTE" {
-		citation, err := s.repository.GetRandomCitation()
-		if err != nil {
-			conn.Write([]byte(fmt.Sprintf("Error getting citation: %v\n", err)))
-			return
-		}
-
-		// Send the citation to the client
-		conn.Write([]byte(fmt.Sprintf("CITATION: %s\n", citation)))
-	} else {
-		conn.Write([]byte("To get a quote, type 'GET QUOTE'.\n"))
+	parts := strings.Split(message, " ")
+	if len(parts) != 2 || parts[0] != "NONCE" {
+		conn.Write([]byte("Invalid solution format.\n"))
+		return
 	}
+
+	nonce := parts[1]
+	if !pow.VerifySolution(challenge, nonce, s.difficulty) {
+		conn.Write([]byte("Incorrect solution.\n"))
+		return
+	}
+
+	citation, err := s.repository.GetRandomCitation()
+	if err != nil {
+		conn.Write([]byte(fmt.Sprintf("Error getting citation: %v\n", err)))
+		return
+	}
+
+	conn.Write([]byte(fmt.Sprintf("CITATION: %s\n", citation)))
+	log.Printf("Sent citation to client: %s", citation)
 }
