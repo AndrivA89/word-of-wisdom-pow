@@ -13,6 +13,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	server := tcp.NewServer(":9000", repo)
+	server := tcp.NewServer(":9000", repo, 4)
 	server.Start()
 }
