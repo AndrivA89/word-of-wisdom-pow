@@ -1,3 +1,4 @@
+// Package repository - load citations
 package repository
 
 import (
@@ -7,48 +8,45 @@ import (
 	"math/big"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
+
+	"github.com/AndrivA89/word-of-wisdom-pow/internal/domain"
 )
 
 const fileName = "citations.txt"
 
+// Repo - struct for repository.
 type Repo struct {
-	citations []string
+	citations []*domain.Citation
 }
 
+// NewRepository - create new repository, load citation from file.
 func NewRepository() (*Repo, error) {
-	wd, err := os.Getwd()
+	filePath, err := getFilePath()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get current directory: %w", err)
-	}
-
-	rootRepoPath, _, found := strings.Cut(wd, "word-of-wisdom-pow")
-	if !found {
 		return nil, err
 	}
-
-	filePath := filepath.Join(
-		rootRepoPath,
-		"word-of-wisdom-pow",
-		"internal",
-		"infrastructure",
-		"repository",
-		fileName,
-	)
 
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open the file: %w", err)
 	}
 
-	citations := make([]string, 0, 101)
+	citations := make([]*domain.Citation, 0, 101)
 	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		citations = append(citations, scanner.Text())
-	}
-
 	if err = scanner.Err(); err != nil {
 		return nil, fmt.Errorf("error reading the file: %w", err)
+	}
+
+	re := regexp.MustCompile(`^"(.*?)"\s*—\s*(.*)$`)
+	for scanner.Scan() {
+		line := scanner.Text()
+		matches := re.FindStringSubmatch(line)
+		if len(matches) == 3 {
+			// matches[1] — citation, matches[2] — author
+			citations = append(citations, domain.NewCitation(matches[1], matches[2]))
+		}
 	}
 
 	if len(citations) == 0 {
@@ -62,10 +60,11 @@ func NewRepository() (*Repo, error) {
 	return &Repo{citations: citations}, nil
 }
 
-func (r *Repo) GetRandomCitation() (string, error) {
+// GetRandomCitation - get random citation from repo.
+func (r *Repo) GetRandomCitation() (*domain.Citation, error) {
 	index, err := randomIndex(len(r.citations))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	return r.citations[index], nil
@@ -74,4 +73,31 @@ func (r *Repo) GetRandomCitation() (string, error) {
 func randomIndex(limit int) (int, error) {
 	randomNum, err := rand.Int(rand.Reader, big.NewInt(int64(limit)))
 	return int(randomNum.Int64()), err
+}
+
+func getFilePath() (string, error) {
+	filePath := os.Getenv("CITATIONS_FILE_PATH")
+
+	if filePath == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return "", fmt.Errorf("failed to get current directory: %w", err)
+		}
+
+		rootRepoPath, _, found := strings.Cut(wd, "word-of-wisdom-pow")
+		if !found {
+			return "", err
+		}
+
+		filePath = filepath.Join(
+			rootRepoPath,
+			"word-of-wisdom-pow",
+			"internal",
+			"infrastructure",
+			"repository",
+			fileName,
+		)
+	}
+
+	return filePath, nil
 }

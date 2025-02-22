@@ -1,6 +1,6 @@
 module github.com/AndrivA89/word-of-wisdom-pow
 
-go 1.21.0
+go 1.21
 
 require github.com/stretchr/testify v1.10.0
 
