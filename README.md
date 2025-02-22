@@ -1,5 +1,4 @@
 # Word of Wisdom TCP Server with PoW
-
 ## Task description
 Design and implement “Word of Wisdom” tcp server.
 
@@ -9,7 +8,6 @@ Design and implement “Word of Wisdom” tcp server.
 - Docker file should be provided both for the server and for the client that solves the POW challenge.
 
 ## Features
-
 - **Proof-of-Work (PoW)** challenge to mitigate DDoS attacks.
 - Domain model for citations (quotes) with author parsing.
 - Repository to load citations from a text file.
@@ -21,7 +19,6 @@ Design and implement “Word of Wisdom” tcp server.
 - golangci-lint configuration for code quality.
 
 ## Project Structure
-
 ```
 word-of-wisdom-pow/
 ├── cmd/
@@ -55,9 +52,7 @@ word-of-wisdom-pow/
 ```
 
 ## Getting Started
-
 ### Prerequisites
-
 - Docker Desktop (with Docker Compose)
 - Go 1.21+ (for local development)
 - [golangci-lint](https://golangci-lint.run/) (optional, for linting)
@@ -69,7 +64,7 @@ word-of-wisdom-pow/
    docker compose up --build
 2. The server will listen on port 9000. The client will connect, solve the PoW challenge, and receive a citation.
 
-Running Locally
+### Running Locally
 1. Ensure that the CITATIONS_FILE_PATH environment variable is set if needed:
    ```bash
    export CITATIONS_FILE_PATH="./internal/infrastructure/repository/citations.txt"
@@ -83,20 +78,27 @@ Running Locally
    go run cmd/client/main.go
    ```
 
-Testing
-
+### Testing
 Run tests using:
    ```bash
    make test
    ```
 
-Linting
-
+### Linting
 Run golangci-lint:
    ```bash
    make lint
    ```
 
-Deployment
-
+### Deployment
 The project is Dockerized and can be deployed using Docker Compose. See the docker-compose.yml file for details
+
+
+## Possible improvements:
+### Error Handling and Logging
+- Improve logging by using structured logging (e.g., with logrus or zap).
+- Add detailed error messages.
+### Configuration and Parameter Management
+- Consider using a more flexible configuration solution (e.g., the Viper library) to manage not only file paths but also other parameters (such as timeouts, PoW difficulty level, etc.).
+### CI/CD and Automation
+- Additionally, set up GitHub Actions to automatically run tests, linting, and build images on every commit.
