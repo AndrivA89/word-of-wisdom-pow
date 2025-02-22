@@ -1,7 +1,6 @@
 # Dockerfile for server
 
-# Use Golang image to build the Go application
-FROM golang:1.21-alpine as builder
+FROM golang:1.21-alpine AS builder
 
 # Set the current working directory inside the container
 WORKDIR /app
