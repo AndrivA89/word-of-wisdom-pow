@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./internal/infrastructure/repository/citations.txt:/app/internal/infrastructure/repository/citations.txt
+    network_mode: "host"
+    environment:
+      - CITATIONS_FILE_PATH=/app/internal/infrastructure/repository/citations.txt
+      - DIFFICULTY=4
+
+  client:
+    build:
+      context: .
+      dockerfile: docker/client/Dockerfile
+    network_mode: "host"
+    depends_on:
+      - server
+
+networks:
+  app-network:
+    driver: bridge
